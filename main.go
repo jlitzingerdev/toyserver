@@ -41,6 +41,20 @@ func WriteAndFlush(w *bufio.Writer, data string) {
 	w.Flush()
 }
 
+type HandlerFn func(context.Context, *bufio.Writer)
+
+var HandlerMap map[string]HandlerFn = map[string]HandlerFn{}
+
+func CreateDb(ctx context.Context, w *bufio.Writer) {
+	svc, ok := ctx.Value("svc").(DbService)
+	if !ok {
+		WriteAndFlush(w, "Context is not a valid db interface\n")
+	} else {
+		svc.CreateDb()
+		WriteAndFlush(w, "successfully created db")
+	}
+}
+
 // Handler for a single connection
 func HandleConn(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
@@ -54,11 +68,17 @@ func HandleConn(ctx context.Context, conn net.Conn) {
 			return
 		case incoming := <-recvCh:
 			fmt.Println("Read ", incoming)
+
 			if incoming == "exit" {
 				return
-			} else {
-				WriteAndFlush(writer, fmt.Sprintf("%s\n", incoming))
 			}
+			handler, ok := HandlerMap[incoming]
+			if !ok {
+				WriteAndFlush(writer, fmt.Sprintf("%s\n", incoming))
+			} else {
+				handler(ctx, writer)
+			}
+
 		}
 	}
 }
@@ -70,7 +90,13 @@ func main() {
 		fmt.Println("Unable to listen on 10000, aborting ", err)
 		return
 	}
-	ctx := context.Background()
+
+	svc, err := NewDbService()
+	ctx := context.WithValue(context.Background(), "svc", svc)
+	if err != nil {
+		fmt.Println("Failed to start db service ", err)
+		return
+	}
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -83,4 +109,8 @@ func main() {
 			HandleConn(deadline, conn)
 		}()
 	}
+}
+
+func init() {
+	HandlerMap["createdb"] = CreateDb
 }
