@@ -19,14 +19,17 @@ const CONN_EXPIRED = "Connection has expired\n"
 func WrappedReader(reader *bufio.Reader) <-chan string {
 	output := make(chan string)
 	go func() {
-		data, err := reader.ReadBytes('\n')
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				fmt.Println("EOF")
-				return
+		for {
+			data, err := reader.ReadBytes('\n')
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					fmt.Println("EOF")
+					break
+				}
 			}
+			output <- strings.ToLower(strings.TrimSpace(string(data)))
 		}
-		output <- strings.ToLower(strings.TrimSpace(string(data)))
+		close(output)
 	}()
 	return output
 }
@@ -51,7 +54,18 @@ func CreateDb(ctx context.Context, w *bufio.Writer) {
 		WriteAndFlush(w, "Context is not a valid db interface\n")
 	} else {
 		svc.CreateDb()
-		WriteAndFlush(w, "successfully created db")
+		WriteAndFlush(w, "successfully created db\n")
+	}
+}
+
+func DropDb(ctx context.Context, w *bufio.Writer) {
+	svc, ok := ctx.Value("svc").(DbService)
+	WriteAndFlush(w, "Preparing do drop db\n")
+	if !ok {
+		WriteAndFlush(w, "Context is not a valid db interface\n")
+	} else {
+		svc.DropDb()
+		WriteAndFlush(w, "successfully dropped db\n")
 	}
 }
 
@@ -113,4 +127,5 @@ func main() {
 
 func init() {
 	HandlerMap["createdb"] = CreateDb
+	HandlerMap["dropdb"] = DropDb
 }

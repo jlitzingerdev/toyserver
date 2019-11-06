@@ -47,3 +47,32 @@ func TestCreateDb(t *testing.T) {
 		t.Errorf("Expected 1 calls to create, have %d", fake.CreateDbCallCount)
 	}
 }
+
+func TestWrappedReader(t *testing.T) {
+	buf := bytes.NewBuffer([]byte{})
+	w := bufio.NewWriter(buf)
+	r := bufio.NewReader(buf)
+
+	w.WriteString("testing\n")
+	w.Flush()
+	w.WriteString("again\n")
+	w.Flush()
+	textCh := WrappedReader(r)
+	result, ok := <-textCh
+	if !ok {
+		t.Error("Channel read failed")
+	}
+	if result != "testing" {
+		t.Errorf("Expected testing, have %s", result)
+	}
+
+	result, ok = <-textCh
+	if !ok {
+		t.Error("Channel is closed")
+		return
+	}
+	if result != "again" {
+		t.Errorf("Expected testing, have %s", result)
+		return
+	}
+}
