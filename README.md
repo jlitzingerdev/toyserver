@@ -22,6 +22,8 @@ docker run --name toyserver -e MYSQL_ROOT_PASSWORD=<your password> -p 3307:3306 
 
 # Usage
 
+```
 DBUSER=<user> DBPASS=<pass> ./toyserver
 
 telnet localhost 10000
+```
