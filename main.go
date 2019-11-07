@@ -44,7 +44,7 @@ func WriteAndFlush(w *bufio.Writer, data string) {
 	w.Flush()
 }
 
-type HandlerFn func(svc DbService) string
+type HandlerFn func(DbService) string
 
 var HandlerMap map[string]HandlerFn = map[string]HandlerFn{}
 
