@@ -13,6 +13,7 @@ type DbService interface {
 	DropDb() error
 	CreateTable() error
 	DropTable() error
+	InsertText(text string) error
 }
 
 type MessageService struct {
@@ -69,5 +70,24 @@ func (svc *MessageService) DropTable() error {
 		fmt.Println("Create failed, and no rollback: ", err)
 		return err
 	}
+	return nil
+}
+
+func (svc *MessageService) InsertText(text string) error {
+	tx, err := svc.db.Begin()
+	if err != nil {
+		return fmt.Errorf("Failed to start a transaction for insert")
+	}
+	r, err := tx.Exec("INSERT INTO test.messages (text) VALUES (?)", text)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("Insert failed %s", err)
+	}
+
+	rows, err := r.RowsAffected()
+	if rows != 1 {
+		return fmt.Errorf("Insert affected %d rows, expected 1: %s", rows, err)
+	}
+	tx.Commit()
 	return nil
 }

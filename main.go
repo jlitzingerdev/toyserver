@@ -16,8 +16,8 @@ const CONN_EXPIRED = "Connection has expired\n"
 // Helper to allow selecting to wait for data from input stream.  This
 // likely has overhead that exceeds managing the reads directly, but
 // provides a selectable interface
-func WrappedReader(reader *bufio.Reader) <-chan string {
-	output := make(chan string)
+func WrappedReader(reader *bufio.Reader) <-chan []string {
+	output := make(chan []string)
 	go func() {
 		for {
 			data, err := reader.ReadBytes('\n')
@@ -27,7 +27,8 @@ func WrappedReader(reader *bufio.Reader) <-chan string {
 					break
 				}
 			}
-			output <- strings.ToLower(strings.TrimSpace(string(data)))
+			line := strings.ToLower(strings.TrimSpace(string(data)))
+			output <- strings.Split(line, ":")
 		}
 		close(output)
 	}()
@@ -44,11 +45,11 @@ func WriteAndFlush(w *bufio.Writer, data string) {
 	w.Flush()
 }
 
-type HandlerFn func(DbService) string
+type HandlerFn func(DbService, ...string) string
 
 var HandlerMap map[string]HandlerFn = map[string]HandlerFn{}
 
-func CreateDb(svc DbService) string {
+func CreateDb(svc DbService, args ...string) string {
 	err := svc.CreateDb()
 	if err != nil {
 		return fmt.Sprint("Failed to create db: ", err)
@@ -56,7 +57,7 @@ func CreateDb(svc DbService) string {
 	return "successfully created db\n"
 }
 
-func DropDb(svc DbService) string {
+func DropDb(svc DbService, args ...string) string {
 	err := svc.DropDb()
 	if err != nil {
 		return fmt.Sprint("failed to drop db: ", err)
@@ -65,7 +66,7 @@ func DropDb(svc DbService) string {
 
 }
 
-func CreateTable(svc DbService) string {
+func CreateTable(svc DbService, args ...string) string {
 	err := svc.CreateTable()
 	if err != nil {
 		return fmt.Sprint("Create table failed: ", err)
@@ -74,7 +75,7 @@ func CreateTable(svc DbService) string {
 	}
 }
 
-func DropTable(svc DbService) string {
+func DropTable(svc DbService, args ...string) string {
 	err := svc.DropTable()
 	if err != nil {
 		return fmt.Sprint("Drop table failed: ", err)
@@ -83,12 +84,23 @@ func DropTable(svc DbService) string {
 	}
 }
 
-func Help(_ DbService) string {
+func Help(_ DbService, args ...string) string {
 	help := "Available Commands: \n"
 	for k, _ := range HandlerMap {
 		help += fmt.Sprintf("\t%s\n", k)
 	}
 	return help
+}
+
+func InsertText(svc DbService, args ...string) string {
+	if len(args) != 1 {
+		return "One and only one argument allowed\n"
+	}
+	err := svc.InsertText(args[0])
+	if err != nil {
+		return fmt.Sprint("Insert failed: ", err)
+	}
+	return fmt.Sprintf("successfully inserted %s\n", args[0])
 }
 
 // Handler for a single connection
@@ -103,18 +115,18 @@ func HandleConn(ctx context.Context, conn net.Conn) {
 			WriteAndFlush(writer, CONN_EXPIRED)
 			return
 		case incoming := <-recvCh:
-			fmt.Println("Read ", incoming)
+			fmt.Println("Read ", incoming[0])
 
-			if incoming == "exit" {
+			if incoming[0] == "exit" {
 				return
 			}
-			handler, ok := HandlerMap[incoming]
+			handler, ok := HandlerMap[incoming[0]]
 			if !ok {
 				WriteAndFlush(writer, fmt.Sprintf("%s\n", incoming))
 			} else {
 				svc, ok := ctx.Value("svc").(DbService)
 				if ok {
-					res := handler(svc)
+					res := handler(svc, incoming[1:]...)
 					WriteAndFlush(writer, res)
 				} else {
 					WriteAndFlush(writer, "context is not a db interface\n")
@@ -158,4 +170,5 @@ func init() {
 	HandlerMap["createtable"] = CreateTable
 	HandlerMap["droptable"] = DropTable
 	HandlerMap["help"] = Help
+	HandlerMap["insert"] = InsertText
 }

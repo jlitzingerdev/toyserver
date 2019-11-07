@@ -12,6 +12,7 @@ type FakeDbService struct {
 	DropDbCallCount      int
 	CreateTableCallCount int
 	DropTableCallCount   int
+	InsertTextCallCount  int
 }
 
 func (svc *FakeDbService) CreateDb() error {
@@ -31,6 +32,11 @@ func (svc *FakeDbService) CreateTable() error {
 
 func (svc *FakeDbService) DropTable() error {
 	svc.DropTableCallCount++
+	return nil
+}
+
+func (svc *FakeDbService) InsertText(text string) error {
+	svc.InsertTextCallCount++
 	return nil
 }
 
@@ -71,7 +77,7 @@ func TestWrappedReader(t *testing.T) {
 	if !ok {
 		t.Error("Channel read failed")
 	}
-	if result != "testing" {
+	if result[0] != "testing" {
 		t.Errorf("Expected testing, have %s", result)
 	}
 
@@ -80,7 +86,7 @@ func TestWrappedReader(t *testing.T) {
 		t.Error("Channel is closed")
 		return
 	}
-	if result != "again" {
+	if result[0] != "again" {
 		t.Errorf("Expected testing, have %s", result)
 		return
 	}
