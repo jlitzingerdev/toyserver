@@ -19,6 +19,12 @@ type MessageService struct {
 	db *sql.DB
 }
 
+const CREATE_TABLE = `CREATE table IF NOT EXISTS test.messages (
+		id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+		created TIMESTAMP,
+		text VARCHAR(256))
+		CHARACTER SET=utf8mb4`
+
 func NewDbService() (*MessageService, error) {
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(127.0.0.1:3307)/", os.Getenv("DBUSER"), os.Getenv("DBPASS")))
 	if err != nil {
@@ -49,9 +55,7 @@ func (svc *MessageService) DropDb() error {
 }
 
 func (svc *MessageService) CreateTable() error {
-	_, err := svc.db.Exec(
-		"CREATE table IF NOT EXISTS test.messages (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, created TIMESTAMP, text VARCHAR(256))",
-	)
+	_, err := svc.db.Exec(CREATE_TABLE)
 	if err != nil {
 		fmt.Println("Create failed, and no rollback: ", err)
 		return err
