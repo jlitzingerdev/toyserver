@@ -49,13 +49,18 @@ type HandlerFn func(svc DbService) string
 var HandlerMap map[string]HandlerFn = map[string]HandlerFn{}
 
 func CreateDb(svc DbService) string {
-	svc.CreateDb()
+	err := svc.CreateDb()
+	if err != nil {
+		return fmt.Sprint("Failed to create db: ", err)
+	}
 	return "successfully created db\n"
 }
 
 func DropDb(svc DbService) string {
-
-	svc.DropDb()
+	err := svc.DropDb()
+	if err != nil {
+		return fmt.Sprint("failed to drop db: ", err)
+	}
 	return "successfully dropped db\n"
 
 }
