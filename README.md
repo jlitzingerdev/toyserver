@@ -12,8 +12,11 @@ go build -o toyserver
 
 This expects a mysql compatible database to be listening on 3307.
 E.g.
+
+```
 docker pull mariadb
 docker run --name toyserver -e MYSQL_ROOT_PASSWORD=<your password> -p 3307:3306 mariadb:latest
+```
 
 -Note this will leave the container hanging around, use --rm to remove
 
