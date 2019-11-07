@@ -83,6 +83,14 @@ func DropTable(svc DbService) string {
 	}
 }
 
+func Help(_ DbService) string {
+	help := "Available Commands: \n"
+	for k, _ := range HandlerMap {
+		help += fmt.Sprintf("\t%s\n", k)
+	}
+	return help
+}
+
 // Handler for a single connection
 func HandleConn(ctx context.Context, conn net.Conn) {
 	defer conn.Close()
@@ -149,4 +157,5 @@ func init() {
 	HandlerMap["dropdb"] = DropDb
 	HandlerMap["createtable"] = CreateTable
 	HandlerMap["droptable"] = DropTable
+	HandlerMap["help"] = Help
 }
