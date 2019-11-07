@@ -9,8 +9,10 @@ import (
 )
 
 type FakeDbService struct {
-	CreateDbCallCount int
-	DropDbCallCount   int
+	CreateDbCallCount    int
+	DropDbCallCount      int
+	CreateTableCallCount int
+	DropTableCallCount   int
 }
 
 func (svc *FakeDbService) CreateDb() error {
@@ -20,6 +22,16 @@ func (svc *FakeDbService) CreateDb() error {
 
 func (svc *FakeDbService) DropDb() error {
 	svc.DropDbCallCount++
+	return nil
+}
+
+func (svc *FakeDbService) CreateTable() error {
+	svc.CreateTableCallCount++
+	return nil
+}
+
+func (svc *FakeDbService) DropTable() error {
+	svc.DropTableCallCount++
 	return nil
 }
 
@@ -40,9 +52,8 @@ func TestWriteAndFlush(t *testing.T) {
 func TestCreateDb(t *testing.T) {
 	fake := &FakeDbService{}
 	ctx := context.WithValue(context.Background(), "svc", fake)
-	buf := bytes.NewBuffer([]byte{})
-	w := bufio.NewWriter(buf)
-	CreateDb(ctx, w)
+
+	CreateDb(ctx)
 	if fake.CreateDbCallCount != 1 {
 		t.Errorf("Expected 1 calls to create, have %d", fake.CreateDbCallCount)
 	}

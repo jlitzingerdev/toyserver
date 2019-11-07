@@ -60,12 +60,39 @@ func CreateDb(ctx context.Context, w *bufio.Writer) {
 
 func DropDb(ctx context.Context, w *bufio.Writer) {
 	svc, ok := ctx.Value("svc").(DbService)
-	WriteAndFlush(w, "Preparing do drop db\n")
 	if !ok {
 		WriteAndFlush(w, "Context is not a valid db interface\n")
 	} else {
 		svc.DropDb()
 		WriteAndFlush(w, "successfully dropped db\n")
+	}
+}
+
+func CreateTable(ctx context.Context, w *bufio.Writer) {
+	svc, ok := ctx.Value("svc").(DbService)
+	if !ok {
+		WriteAndFlush(w, "Context is not a valid db interface\n")
+	} else {
+		err := svc.CreateTable()
+		if err != nil {
+			WriteAndFlush(w, fmt.Sprint("Create table failed: ", err))
+		} else {
+			WriteAndFlush(w, "successfully created table\n")
+		}
+	}
+}
+
+func DropTable(ctx context.Context, w *bufio.Writer) {
+	svc, ok := ctx.Value("svc").(DbService)
+	if !ok {
+		WriteAndFlush(w, "Context is not a valid db interface\n")
+	} else {
+		err := svc.DropTable()
+		if err != nil {
+			WriteAndFlush(w, fmt.Sprint("Drop table failed: ", err))
+		} else {
+			WriteAndFlush(w, "successfully dropped table\n")
+		}
 	}
 }
 
@@ -128,4 +155,6 @@ func main() {
 func init() {
 	HandlerMap["createdb"] = CreateDb
 	HandlerMap["dropdb"] = DropDb
+	HandlerMap["createtable"] = CreateTable
+	HandlerMap["droptable"] = DropTable
 }

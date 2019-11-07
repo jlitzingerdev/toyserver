@@ -11,6 +11,8 @@ import (
 type DbService interface {
 	CreateDb() error
 	DropDb() error
+	CreateTable() error
+	DropTable() error
 }
 
 type MessageService struct {
@@ -44,4 +46,24 @@ func (svc *MessageService) CreateDb() error {
 
 func (svc *MessageService) DropDb() error {
 	return svc.Exec("DROP DATABASE test")
+}
+
+func (svc *MessageService) CreateTable() error {
+	_, err := svc.db.Exec(
+		"CREATE table IF NOT EXISTS test.messages (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, created TIMESTAMP, text VARCHAR(256))",
+	)
+	if err != nil {
+		fmt.Println("Create failed, and no rollback: ", err)
+		return err
+	}
+	return nil
+}
+
+func (svc *MessageService) DropTable() error {
+	_, err := svc.db.Exec("DROP TABLE test.messages")
+	if err != nil {
+		fmt.Println("Create failed, and no rollback: ", err)
+		return err
+	}
+	return nil
 }
