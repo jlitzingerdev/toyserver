@@ -44,55 +44,37 @@ func WriteAndFlush(w *bufio.Writer, data string) {
 	w.Flush()
 }
 
-type HandlerFn func(context.Context, *bufio.Writer)
+type HandlerFn func(svc DbService) string
 
 var HandlerMap map[string]HandlerFn = map[string]HandlerFn{}
 
-func CreateDb(ctx context.Context, w *bufio.Writer) {
-	svc, ok := ctx.Value("svc").(DbService)
-	if !ok {
-		WriteAndFlush(w, "Context is not a valid db interface\n")
+func CreateDb(svc DbService) string {
+	svc.CreateDb()
+	return "successfully created db\n"
+}
+
+func DropDb(svc DbService) string {
+
+	svc.DropDb()
+	return "successfully dropped db\n"
+
+}
+
+func CreateTable(svc DbService) string {
+	err := svc.CreateTable()
+	if err != nil {
+		return fmt.Sprint("Create table failed: ", err)
 	} else {
-		svc.CreateDb()
-		WriteAndFlush(w, "successfully created db\n")
+		return "successfully created table\n"
 	}
 }
 
-func DropDb(ctx context.Context, w *bufio.Writer) {
-	svc, ok := ctx.Value("svc").(DbService)
-	if !ok {
-		WriteAndFlush(w, "Context is not a valid db interface\n")
+func DropTable(svc DbService) string {
+	err := svc.DropTable()
+	if err != nil {
+		return fmt.Sprint("Drop table failed: ", err)
 	} else {
-		svc.DropDb()
-		WriteAndFlush(w, "successfully dropped db\n")
-	}
-}
-
-func CreateTable(ctx context.Context, w *bufio.Writer) {
-	svc, ok := ctx.Value("svc").(DbService)
-	if !ok {
-		WriteAndFlush(w, "Context is not a valid db interface\n")
-	} else {
-		err := svc.CreateTable()
-		if err != nil {
-			WriteAndFlush(w, fmt.Sprint("Create table failed: ", err))
-		} else {
-			WriteAndFlush(w, "successfully created table\n")
-		}
-	}
-}
-
-func DropTable(ctx context.Context, w *bufio.Writer) {
-	svc, ok := ctx.Value("svc").(DbService)
-	if !ok {
-		WriteAndFlush(w, "Context is not a valid db interface\n")
-	} else {
-		err := svc.DropTable()
-		if err != nil {
-			WriteAndFlush(w, fmt.Sprint("Drop table failed: ", err))
-		} else {
-			WriteAndFlush(w, "successfully dropped table\n")
-		}
+		return "successfully dropped table\n"
 	}
 }
 
@@ -117,9 +99,14 @@ func HandleConn(ctx context.Context, conn net.Conn) {
 			if !ok {
 				WriteAndFlush(writer, fmt.Sprintf("%s\n", incoming))
 			} else {
-				handler(ctx, writer)
+				svc, ok := ctx.Value("svc").(DbService)
+				if ok {
+					res := handler(svc)
+					WriteAndFlush(writer, res)
+				} else {
+					WriteAndFlush(writer, "context is not a db interface\n")
+				}
 			}
-
 		}
 	}
 }

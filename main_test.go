@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"strings"
 	"testing"
 )
@@ -51,9 +50,8 @@ func TestWriteAndFlush(t *testing.T) {
 
 func TestCreateDb(t *testing.T) {
 	fake := &FakeDbService{}
-	ctx := context.WithValue(context.Background(), "svc", fake)
 
-	CreateDb(ctx)
+	CreateDb(fake)
 	if fake.CreateDbCallCount != 1 {
 		t.Errorf("Expected 1 calls to create, have %d", fake.CreateDbCallCount)
 	}
